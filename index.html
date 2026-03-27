@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Update Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+  :root {
+    --bg-primary: #000000;
+    --bg-secondary: #0a0a0a;
+    --bg-card: #111111;
+    --bg-card-hover: #181818;
+    --accent-orange: #ff6b35;
+    --accent-cyan: #00e5ff;
+    --accent-purple: #c084fc;
+    --accent-green: #34d399;
+    --text-primary: #e8e6e3;
+    --text-secondary: #8a8a9a;
+    --text-muted: #555566;
+    --border: #2a2a3a;
+    --glow-orange: rgba(255, 107, 53, 0.15);
+    --glow-cyan: rgba(0, 229, 255, 0.1);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'IBM Plex Mono', 'Noto Sans KR', monospace;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ═══ NOISE OVERLAY ═══ */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ═══ SCROLLBAR ═══ */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-orange); }
+
+  /* ═══ NAV ═══ */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 16px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.9);
+    border-bottom: 1px solid rgba(42, 42, 58, 0.5);
+  }
+
+  .nav-logo {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--accent-orange);
+    letter-spacing: -0.5px;
+  }
+
+  .nav-logo span { color: var(--text-muted); }
+
+  .nav-links {
+    display: flex;
+    gap: 24px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: color 0.2s;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .nav-links a:hover { color: var(--accent-orange); }
+
+  /* ═══ HERO ═══ */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 120px 24px 80px;
+  }
+
+  /* No glow */
+
+  /* Orbit ring */
+  .orbit-container {
+    position: relative;
+    width: 380px;
+    height: 380px;
+    margin-bottom: 48px;
+  }
+
+  .orbit-ring {
+    position: absolute;
+    inset: 0;
+    border: 2px dashed #ffffff;
+    border-radius: 50%;
+    animation: orbit-pulse 4s ease-in-out infinite;
+  }
+
+  @keyframes orbit-pulse {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(1.02); }
+  }
+
+  /* Orbit text */
+  .orbit-text {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    animation: spin-text 20s linear infinite;
+  }
+
+  .orbit-text svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .orbit-text textPath {
+    fill: #ffffff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 3px;
+  }
+
+  @keyframes spin-text {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Cat image */
+  .cat-wrapper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: border-color 0.4s;
+  }
+
+  .cat-wrapper:hover {
+    opacity: 0.9;
+  }
+
+  .cat-wrapper img {
+    width: 360px;
+    height: 360px;
+    object-fit: cover;
+    animation: spin-cat 4s linear infinite;
+    transition: animation-duration 0.8s ease;
+  }
+
+  .cat-wrapper:hover img {
+    animation-duration: 12s;
+  }
+
+  @keyframes spin-cat {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Arrow indicators on orbit */
+  .orbit-arrow {
+    position: absolute;
+    font-size: 20px;
+    color: var(--accent-orange);
+    font-weight: 900;
+  }
+
+  .orbit-arrow.top { top: -8px; left: 50%; transform: translateX(-50%); }
+  .orbit-arrow.bottom { bottom: -8px; left: 50%; transform: translateX(-50%) rotate(180deg); }
+
+  .hero-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(28px, 4.5vw, 46px);
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    text-transform: uppercase;
+    margin-top: 12px;
+    margin-bottom: 16px;
+    color: #ffffff;
+  }
+
+  .hero-title .highlight {
+    color: #ffffff;
+  }
+
+  .hero-subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 20px;
+    background: transparent;
+    color: var(--accent-orange);
+    border: none;
+    font-weight: 600;
+    font-size: 20px;
+    border-radius: 100px;
+    margin-top: 16px;
+    text-decoration: none;
+    transition: all 0.3s;
+    cursor: pointer;
+    font-family: 'Satoshi', sans-serif;
+  }
+
+  .hero-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(255, 107, 53, 0.3);
+  }
+
+  .scroll-indicator {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    animation: bounce 2s ease-in-out infinite;
+  }
+
+  .scroll-indicator .arrow {
+    width: 20px;
+    height: 20px;
+    border-right: 2px solid var(--text-muted);
+    border-bottom: 2px solid var(--text-muted);
+    transform: rotate(45deg);
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(8px); }
+  }
+
+  /* ═══ STATS BAR ═══ */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    padding: 32px 24px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-secondary);
+  }
+
+  .stat-item {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--accent-orange);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ═══ UPDATES SECTION ═══ */
+  .updates-section {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 80px 24px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 48px;
+  }
+
+  .section-title {
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: -1px;
+  }
+
+  .section-title span { color: var(--accent-orange); }
+
+  .filter-pills {
+    display: flex;
+    gap: 8px;
+  }
+
+  .filter-pill {
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-pill:hover, .filter-pill.active {
+    border-color: var(--accent-orange);
+    color: var(--accent-orange);
+    background: var(--glow-orange);
+  }
+
+  /* ═══ UPDATE CARD ═══ */
+  .update-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0;
+    margin-bottom: 24px;
+    overflow: hidden;
+    transition: all 0.3s;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .update-card.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .update-card:hover {
+    border-color: rgba(255, 107, 53, 0.3);
+    background: var(--bg-card-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  .update-card.visible:hover {
+    transform: translateY(-2px);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 28px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-date-badge {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .date-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 6px;
+  }
+
+  .version-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-orange);
+    padding: 4px 12px;
+    background: rgba(255, 107, 53, 0.08);
+    border: 1px solid rgba(255, 107, 53, 0.15);
+    border-radius: 100px;
+  }
+
+  .card-title {
+    font-size: 22px;
+    font-weight: 800;
+    padding: 20px 28px 8px;
+    letter-spacing: -0.5px;
+  }
+
+  .card-summary {
+    padding: 0 28px 20px;
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+
+  .card-sections {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .card-section {
+    padding: 20px 24px;
+    background: var(--bg-card);
+    transition: background 0.2s;
+    position: relative;
+  }
+
+  .card-section:hover {
+    background: var(--bg-card-hover);
+  }
+
+  .section-icon {
+    font-size: 18px;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .section-content {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .section-content ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .section-content li {
+    position: relative;
+    padding-left: 16px;
+    margin-bottom: 4px;
+  }
+
+  .section-content li::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    color: var(--accent-orange);
+    font-weight: 700;
+  }
+
+  .section-content code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 7px;
+    border-radius: 4px;
+    color: var(--accent-orange);
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    border-top: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.01);
+  }
+
+  .card-tags {
+    display: flex;
+    gap: 6px;
+  }
+
+  .card-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  .card-tag.model { border-color: rgba(192, 132, 252, 0.3); color: var(--accent-purple); }
+  .card-tag.cli { border-color: rgba(52, 211, 153, 0.3); color: var(--accent-green); }
+  .card-tag.feature { border-color: rgba(255, 107, 53, 0.3); color: var(--accent-orange); }
+
+  .source-link {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s;
+  }
+
+  .source-link:hover { color: var(--accent-orange); }
+
+  .source-link svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
+
+  /* ═══ CHECK BUTTON ═══ */
+  .check-btn {
+    width: 22px;
+    height: 22px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+
+  .check-btn:hover {
+    border-color: var(--accent-orange);
+  }
+
+  .check-btn.checked {
+    border-color: var(--accent-orange);
+    background: var(--accent-orange);
+  }
+
+  .check-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: #000;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .check-btn.checked svg {
+    opacity: 1;
+  }
+
+  .update-card.read .card-title {
+    text-decoration: line-through;
+    text-decoration-color: var(--text-muted);
+    color: var(--text-muted);
+  }
+
+  .update-card.read {
+    opacity: 0.5;
+  }
+
+  /* ═══ SECTION CHECK ═══ */
+  .section-check {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    position: absolute;
+    top: 20px;
+    right: 16px;
+  }
+
+  .section-check:hover {
+    border-color: var(--accent-orange);
+  }
+
+  .section-check.checked {
+    border-color: var(--accent-orange);
+    background: var(--accent-orange);
+  }
+
+  .section-check svg {
+    width: 9px;
+    height: 9px;
+    fill: none;
+    stroke: #000;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0;
+  }
+
+  .section-check.checked svg {
+    opacity: 1;
+  }
+
+  .card-section.section-read .section-content {
+    text-decoration: line-through;
+    text-decoration-color: var(--text-muted);
+    color: var(--text-muted);
+    opacity: 0.4;
+  }
+
+  /* ═══ SWIPE TO DISMISS ═══ */
+  .update-card {
+    position: relative;
+    touch-action: pan-y;
+  }
+
+  .update-card.swiping {
+    transition: none !important;
+  }
+
+  .update-card.dismissing {
+    transition: transform 0.3s ease, opacity 0.3s ease, max-height 0.4s ease 0.1s, margin 0.4s ease 0.1s, padding 0.4s ease 0.1s;
+    overflow: hidden;
+  }
+
+  .swipe-hint {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-orange);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+
+  .update-card:first-child .swipe-hint-static {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* ═══ FOOTER ═══ */
+  footer {
+    text-align: center;
+    padding: 48px 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  footer a {
+    color: var(--accent-orange);
+    text-decoration: none;
+  }
+
+  footer .cat-tiny {
+    font-size: 24px;
+    display: inline-block;
+    animation: spin-cat 3s linear infinite;
+    margin-bottom: 12px;
+  }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 700px) {
+    .orbit-container {
+      width: 280px;
+      height: 280px;
+    }
+    .cat-wrapper {
+      width: 160px;
+      height: 160px;
+    }
+    .cat-wrapper img {
+      width: 280px;
+      height: 280px;
+    }
+    .card-sections {
+      grid-template-columns: 1fr;
+    }
+    .stats-bar {
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .section-header {
+      flex-direction: column;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    nav {
+      padding: 12px 16px;
+    }
+    .nav-links { gap: 12px; }
+    .filter-pills { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">claude<span>/</span>updates</div>
+  <ul class="nav-links">
+    <li><a href="#updates">updates</a></li>
+    <li><a href="https://x.com/bcherny" target="_blank">@bcherny</a></li>
+    <li><a href="https://docs.anthropic.com" target="_blank">docs</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="orbit-container">
+    <div class="orbit-ring"></div>
+
+    <!-- Circular text -->
+    <div class="orbit-text">
+      <svg viewBox="0 0 380 380">
+        <defs>
+          <path id="circlePath" d="M 190,190 m -155,0 a 155,155 0 1,1 310,0 a 155,155 0 1,1 -310,0" />
+        </defs>
+        <text>
+          <textPath href="#circlePath">I WAKE UP ・ THERE IS ANOTHER CLAUDE UPDATE ・ I WAKE UP ・ THERE IS ANOTHER CLAUDE UPDATE ・</textPath>
+        </text>
+      </svg>
+    </div>
+
+    <div class="orbit-arrow top">&#8595;</div>
+    <div class="orbit-arrow bottom">&#8595;</div>
+
+    <!-- Cat -->
+    <div class="cat-wrapper">
+      <img src="cat.png" alt="Tinfoil hat cat" />
+    </div>
+  </div>
+
+  <h1 class="hero-title">
+    BABE WAKE UP,<br><span class="highlight">NEW UPDATE JUST DROPPED</span>
+  </h1>
+  <p class="hero-subtitle">tracking Claude Code updates so you don't have to</p>
+  <a href="#updates" class="hero-cta">
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;👾&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  </a>
+
+  <div class="scroll-indicator">
+    <span>scroll</span>
+    <div class="arrow"></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-value" data-count="47">0</div>
+    <div class="stat-label">updates tracked</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value" data-count="12">0</div>
+    <div class="stat-label">this month</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value" data-count="2">0</div>
+    <div class="stat-label">days since last update</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-value">&#8734;</div>
+    <div class="stat-label">times cat has spun</div>
+  </div>
+</div>
+
+<!-- UPDATES -->
+<section class="updates-section" id="updates">
+  <div class="section-header">
+    <h2 class="section-title">Latest <span>Updates</span></h2>
+    <div class="filter-pills">
+      <button class="filter-pill active" data-filter="all">All</button>
+      <button class="filter-pill" data-filter="model">Model</button>
+      <button class="filter-pill" data-filter="cli">CLI</button>
+      <button class="filter-pill" data-filter="feature">Feature</button>
+    </div>
+  </div>
+
+  <!-- Card 0a -->
+  <article class="update-card" data-category="feature">
+    <div class="card-header">
+      <div class="card-date-badge">
+        <span class="date-tag">2026-03-24</span>
+        <span class="version-badge">Computer Use</span>
+      </div>
+      <button class="check-btn" aria-label="Mark as read"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+    </div>
+    <h3 class="card-title">Claude Can Now Control Your Computer</h3>
+    <p class="card-summary">Claude can now directly control your mouse, browser, and apps — open files, fill spreadsheets, navigate websites, all with no setup required.</p>
+    <div class="card-sections">
+      <div class="card-section">
+        <span class="section-icon">&#128203;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">What's New</div>
+        <div class="section-content">
+          <ul>
+            <li>Point, click, type — Claude controls your desktop</li>
+            <li>Opens files, runs dev tools, navigates browsers</li>
+            <li>No setup required — works out of the box</li>
+            <li>Pairs with Remote Control for phone-triggered tasks</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128229;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Update</div>
+        <div class="section-content">
+          <ul>
+            <li>Research preview for Pro and Max users</li>
+            <li>Update Claude Desktop to latest version</li>
+            <li>Enable in Cowork settings</li>
+            <li>Works on macOS (Windows coming soon)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128161;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Use</div>
+        <div class="section-content">
+          <ul>
+            <li>"Fill out this spreadsheet with Q1 data"</li>
+            <li>"Open Chrome and book me a flight"</li>
+            <li>Combine with Dispatch for phone-triggered actions</li>
+            <li>Claude sees your screen and acts on it</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128101;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">Community</div>
+        <div class="section-content">
+          <ul>
+            <li>9to5Google: "It looks absolutely wild"</li>
+            <li>CNBC covered the launch</li>
+            <li>~50/50 reliability on complex tasks (research preview)</li>
+            <li>Desktop must stay awake for tasks to run</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <div class="card-tags">
+        <span class="card-tag feature">computer use</span>
+        <span class="card-tag feature">cowork</span>
+      </div>
+      <a class="source-link" href="https://claude.com/blog/dispatch-and-computer-use" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        claude.com/blog
+      </a>
+    </div>
+  </article>
+
+  <!-- Card 0b -->
+  <article class="update-card" data-category="feature">
+    <div class="card-header">
+      <div class="card-date-badge">
+        <span class="date-tag">2026-03-17</span>
+        <span class="version-badge">Dispatch</span>
+      </div>
+      <button class="check-btn" aria-label="Mark as read"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+    </div>
+    <h3 class="card-title">Claude Dispatch: Control Cowork From Your Phone</h3>
+    <p class="card-summary">Send tasks to your desktop Cowork session from your phone. Claude executes locally with full access to files, services, and plugins.</p>
+    <div class="card-sections">
+      <div class="card-section">
+        <span class="section-icon">&#128203;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">What's New</div>
+        <div class="section-content">
+          <ul>
+            <li>Send tasks from phone to desktop Cowork</li>
+            <li>Persistent conversation thread across devices</li>
+            <li>Claude executes on desktop with local file access</li>
+            <li>Available for Max and Pro subscribers</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128229;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Update</div>
+        <div class="section-content">
+          <ul>
+            <li>Update Claude Desktop + Claude mobile app</li>
+            <li>Max plans: available now</li>
+            <li>Pro plans: rolling out over 2 days</li>
+            <li>iOS and Android supported</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128161;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Use</div>
+        <div class="section-content">
+          <ul>
+            <li>Open Claude app on phone, connect to Cowork</li>
+            <li>Send a task: "Refactor the auth module"</li>
+            <li>Come back later to finished work</li>
+            <li>Desktop must be awake + Claude Desktop open</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128101;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">Community</div>
+        <div class="section-content">
+          <ul>
+            <li>Boris: phone as remote control for your AI</li>
+            <li>~50/50 reliability on complex tasks (early preview)</li>
+            <li>Popular for kicking off tasks while commuting</li>
+            <li>Pairs perfectly with Computer Use for full automation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <div class="card-tags">
+        <span class="card-tag feature">dispatch</span>
+        <span class="card-tag feature">mobile</span>
+      </div>
+      <a class="source-link" href="https://claude.com/blog/dispatch-and-computer-use" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        claude.com/blog
+      </a>
+    </div>
+  </article>
+
+  <!-- Card 1 -->
+  <article class="update-card" data-category="feature">
+    <div class="card-header">
+      <div class="card-date-badge">
+        <span class="date-tag">2026-03-21</span>
+        <span class="version-badge">Opus 4.6 1M Default</span>
+      </div>
+      <button class="check-btn" aria-label="Mark as read"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+    </div>
+    <h3 class="card-title">Opus 4.6 (1M Context) Now Default in Claude Code</h3>
+    <p class="card-summary">Boris announced Opus 4.6 with 1M context is now the default model for Claude Code on Max, Team, and Enterprise plans.</p>
+    <div class="card-sections">
+      <div class="card-section">
+        <span class="section-icon">&#128203;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">What's New</div>
+        <div class="section-content">
+          <ul>
+            <li>Opus 4.6 (1M context) is now the default model</li>
+            <li>Available on Max, Team, Enterprise plans</li>
+            <li>Pro/Sonnet users can opt in with <code>/extra-usage</code></li>
+            <li>Fast mode uses same Opus 4.6 with faster output</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128229;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Update</div>
+        <div class="section-content">
+          <ul>
+            <li><code>npm install -g @anthropic-ai/claude-code@latest</code></li>
+            <li>Or: <code>claude update</code></li>
+            <li>Auto-applied for Max/Team/Enterprise</li>
+            <li>Toggle fast mode with <code>/fast</code></li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128161;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Use</div>
+        <div class="section-content">
+          <ul>
+            <li>Entire codebases fit in a single context window</li>
+            <li>Complex multi-file refactors in one shot</li>
+            <li>Run parallel agents with 5 git checkouts</li>
+            <li>Boris ships 20-30 PRs/day with this setup</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128101;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">Community</div>
+        <div class="section-content">
+          <ul>
+            <li>"Context window upgrade is a game changer"</li>
+            <li>Boris: 259 PRs in 30 days, all via Claude Code</li>
+            <li>Anthropic engineer output up 200% this year</li>
+            <li>Tip: "Give Claude a way to verify its work"</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <div class="card-tags">
+        <span class="card-tag model">model</span>
+        <span class="card-tag feature">1M context</span>
+      </div>
+      <a class="source-link" href="https://x.com/bcherny/status/2032514807388123255" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        @bcherny
+      </a>
+    </div>
+  </article>
+
+  <!-- Card 2 -->
+  <article class="update-card" data-category="feature">
+    <div class="card-header">
+      <div class="card-date-badge">
+        <span class="date-tag">2026-03-10</span>
+        <span class="version-badge">Code Review</span>
+      </div>
+      <button class="check-btn" aria-label="Mark as read"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+    </div>
+    <h3 class="card-title">Multi-Agent Code Review for PRs</h3>
+    <p class="card-summary">Claude Code now dispatches a team of agents to review PRs in parallel, filtering false positives and ranking findings by severity.</p>
+    <div class="card-sections">
+      <div class="card-section">
+        <span class="section-icon">&#128203;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">What's New</div>
+        <div class="section-content">
+          <ul>
+            <li>Multi-agent PR review runs in parallel</li>
+            <li>Verifies bugs to filter out false positives</li>
+            <li>Single high-signal overview + inline comments</li>
+            <li>54% of PRs now get substantive review (was 16%)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128229;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Update</div>
+        <div class="section-content">
+          <ul>
+            <li>Research preview (beta) for Team & Enterprise</li>
+            <li>Billed on token usage: ~$15-25 per PR</li>
+            <li>Docs: <code>code.claude.com/docs/en/code-review</code></li>
+            <li>Auto-triggers when PR is opened</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128161;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Use</div>
+        <div class="section-content">
+          <ul>
+            <li>Open a PR and review starts automatically</li>
+            <li>Large PRs (1000+ lines): 84% get findings</li>
+            <li>Avg 7.5 issues found on large PRs</li>
+            <li>Catches real bugs that human reviewers miss</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128101;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">Community</div>
+        <div class="section-content">
+          <ul>
+            <li>Boris: "Using it for weeks, catches real issues"</li>
+            <li>Debate on $15-25/PR cost for small teams</li>
+            <li>Solves review bottleneck as code output grows</li>
+            <li>Anthropic uses it internally on all repos</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <div class="card-tags">
+        <span class="card-tag feature">code review</span>
+        <span class="card-tag cli">agents</span>
+      </div>
+      <a class="source-link" href="https://x.com/bcherny/status/2031089411820228645" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        @bcherny
+      </a>
+    </div>
+  </article>
+
+  <!-- Card 3 -->
+  <article class="update-card" data-category="cli">
+    <div class="card-header">
+      <div class="card-date-badge">
+        <span class="date-tag">2026-03-03</span>
+        <span class="version-badge">Voice Mode</span>
+      </div>
+      <button class="check-btn" aria-label="Mark as read"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+    </div>
+    <h3 class="card-title">Voice Mode & /loop Command</h3>
+    <p class="card-summary">Talk to Claude Code with push-to-talk voice input, and set up recurring monitoring with the new /loop command.</p>
+    <div class="card-sections">
+      <div class="card-section">
+        <span class="section-icon">&#128203;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">What's New</div>
+        <div class="section-content">
+          <ul>
+            <li>Voice mode via <code>/voice</code> command</li>
+            <li>Push-to-talk: hold spacebar to speak</li>
+            <li>Supports 20 languages</li>
+            <li><code>/loop 5m</code> for recurring task monitoring</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128229;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Update</div>
+        <div class="section-content">
+          <ul>
+            <li><code>npm install -g @anthropic-ai/claude-code@latest</code></li>
+            <li>Current version: <code>v2.1.85</code></li>
+            <li>Customize key in <code>keybindings.json</code></li>
+            <li>Disable loop: <code>CLAUDE_CODE_DISABLE_CRON</code></li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128161;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Use</div>
+        <div class="section-content">
+          <ul>
+            <li>Type <code>/voice</code>, hold spacebar, speak</li>
+            <li>Great for thinking through problems hands-free</li>
+            <li><code>/loop 5m check the deploy</code> for monitoring</li>
+            <li>Loop runs as session-level cron job</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128101;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">Community</div>
+        <div class="section-content">
+          <ul>
+            <li>Push-to-talk praised as right UX choice</li>
+            <li>Devs using voice for architecture brainstorming</li>
+            <li>/loop popular for deploy & CI monitoring</li>
+            <li>TechCrunch covered the voice mode launch</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <div class="card-tags">
+        <span class="card-tag cli">cli</span>
+        <span class="card-tag feature">voice</span>
+        <span class="card-tag feature">loop</span>
+      </div>
+      <a class="source-link" href="https://x.com/bcherny" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        @bcherny
+      </a>
+    </div>
+  </article>
+
+  <!-- Card 4 -->
+  <article class="update-card" data-category="feature">
+    <div class="card-header">
+      <div class="card-date-badge">
+        <span class="date-tag">2026-02-26</span>
+        <span class="version-badge">Remote Control</span>
+      </div>
+      <button class="check-btn" aria-label="Mark as read"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+    </div>
+    <h3 class="card-title">Claude Code Remote Control (Code from Your Phone)</h3>
+    <p class="card-summary">Continue your local Claude Code session from your phone or any browser. Everything runs locally, nothing moves to the cloud.</p>
+    <div class="card-sections">
+      <div class="card-section">
+        <span class="section-icon">&#128203;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">What's New</div>
+        <div class="section-content">
+          <ul>
+            <li>Continue local sessions from phone/tablet/browser</li>
+            <li>Everything runs locally on your machine</li>
+            <li>Filesystem, MCP servers, tools all available</li>
+            <li>Conversation syncs across all devices</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128229;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Update</div>
+        <div class="section-content">
+          <ul>
+            <li>Research preview on Max and Pro plans</li>
+            <li><code>claude update</code> to latest version</li>
+            <li>Works with claude.ai/code or Claude mobile app</li>
+            <li>iOS and Android supported</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128161;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">How to Use</div>
+        <div class="section-content">
+          <ul>
+            <li>Start session in terminal</li>
+            <li>Press spacebar to show QR code</li>
+            <li>Scan with phone to connect</li>
+            <li>Monitor long-running tasks on the go</li>
+          </ul>
+        </div>
+      </div>
+      <div class="card-section">
+        <span class="section-icon">&#128101;</span>
+        <button class="section-check"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
+        <div class="section-label">Community</div>
+        <div class="section-content">
+          <ul>
+            <li>Boris: "This blew my mind the first time"</li>
+            <li>Great for kicking off tasks & reviewing later</li>
+            <li>Devs using it to monitor agents from couch</li>
+            <li>Perfect combo with background agents</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <div class="card-tags">
+        <span class="card-tag feature">remote</span>
+        <span class="card-tag feature">mobile</span>
+      </div>
+      <a class="source-link" href="https://x.com/bcherny/status/2032578639276159438" target="_blank">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        @bcherny
+      </a>
+    </div>
+  </article>
+
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="cat-tiny">👾</div>
+  <p>Built by a human who wakes up, Claude updates every day.</p>
+  <p style="margin-top:8px">Source: <a href="https://x.com/bcherny" target="_blank">@bcherny</a> &middot; Powered by tinfoil hat energy</p>
+</footer>
+
+<script>
+  // ═══ SCROLL ANIMATIONS ═══
+  const observerOptions = {
+    threshold: 0.1,
+    rootMargin: '0px 0px -50px 0px'
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, index) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => {
+          entry.target.classList.add('visible');
+        }, index * 100);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, observerOptions);
+
+  document.querySelectorAll('.update-card').forEach(card => {
+    observer.observe(card);
+  });
+
+  // ═══ COUNTER ANIMATION ═══
+  const countObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const el = entry.target;
+        const target = parseInt(el.dataset.count);
+        if (isNaN(target)) return;
+        let current = 0;
+        const duration = 1500;
+        const step = target / (duration / 16);
+        const timer = setInterval(() => {
+          current += step;
+          if (current >= target) {
+            current = target;
+            clearInterval(timer);
+          }
+          el.textContent = Math.floor(current);
+        }, 16);
+        countObserver.unobserve(el);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  document.querySelectorAll('.stat-value[data-count]').forEach(el => {
+    countObserver.observe(el);
+  });
+
+  // ═══ FILTER PILLS ═══
+  const pills = document.querySelectorAll('.filter-pill');
+  const cards = document.querySelectorAll('.update-card');
+
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+
+      const filter = pill.dataset.filter;
+      cards.forEach(card => {
+        if (filter === 'all' || card.dataset.category === filter) {
+          card.style.display = '';
+          requestAnimationFrame(() => card.classList.add('visible'));
+        } else {
+          card.style.display = 'none';
+          card.classList.remove('visible');
+        }
+      });
+    });
+  });
+
+  // ═══ NAV HIDE ON SCROLL ═══
+  let lastScroll = 0;
+  const nav = document.querySelector('nav');
+
+  window.addEventListener('scroll', () => {
+    const currentScroll = window.scrollY;
+    if (currentScroll > lastScroll && currentScroll > 100) {
+      nav.style.transform = 'translateY(-100%)';
+      nav.style.transition = 'transform 0.3s';
+    } else {
+      nav.style.transform = 'translateY(0)';
+    }
+    lastScroll = currentScroll;
+  });
+
+  // ═══ SWIPE TO DISMISS ═══
+  function getDismissId(card) {
+    const title = card.querySelector('.card-title');
+    return title ? title.textContent.trim() : '';
+  }
+
+  function initSwipe(card) {
+    let startX = 0;
+    let currentX = 0;
+    let isDragging = false;
+    const threshold = 120;
+
+    const hint = document.createElement('div');
+    hint.className = 'swipe-hint';
+    hint.textContent = '← swipe to dismiss';
+    card.appendChild(hint);
+
+    function onStart(e) {
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      startX = x;
+      currentX = x;
+      isDragging = true;
+      card.classList.add('swiping');
+    }
+
+    function onMove(e) {
+      if (!isDragging) return;
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      currentX = x;
+      const dx = currentX - startX;
+      if (dx > 0) return; // only left swipe
+      card.style.transform = `translateX(${dx}px)`;
+      card.style.opacity = Math.max(0, 1 - Math.abs(dx) / 300);
+      hint.style.opacity = Math.min(1, Math.abs(dx) / 80);
+    }
+
+    function onEnd() {
+      if (!isDragging) return;
+      isDragging = false;
+      card.classList.remove('swiping');
+      const dx = currentX - startX;
+
+      if (dx < -threshold) {
+        // Dismiss
+        // Session only dismiss, comes back on refresh
+
+        card.classList.add('dismissing');
+        card.style.transform = 'translateX(-120%)';
+        card.style.opacity = '0';
+        setTimeout(() => {
+          card.style.maxHeight = '0';
+          card.style.marginBottom = '0';
+          card.style.padding = '0';
+          setTimeout(() => card.remove(), 400);
+        }, 300);
+      } else {
+        // Snap back
+        card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+        card.style.transform = 'translateX(0)';
+        card.style.opacity = '1';
+        hint.style.opacity = '0';
+        setTimeout(() => { card.style.transition = ''; }, 300);
+      }
+    }
+
+    // Touch events
+    card.addEventListener('touchstart', onStart, { passive: true });
+    card.addEventListener('touchmove', onMove, { passive: true });
+    card.addEventListener('touchend', onEnd);
+
+    // Mouse events
+    card.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onEnd);
+  }
+
+  document.querySelectorAll('.update-card').forEach(initSwipe);
+
+  // ═══ CHECK TO MARK AS READ ═══
+  document.querySelectorAll('.check-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      btn.classList.toggle('checked');
+      const card = btn.closest('.update-card');
+      card.classList.toggle('read');
+    });
+  });
+
+  // ═══ SECTION CHECKS ═══
+  document.querySelectorAll('.section-check').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      btn.classList.toggle('checked');
+      const section = btn.closest('.card-section');
+      section.classList.toggle('section-read');
+    });
+  });
+</script>
+</body>
+</html>
