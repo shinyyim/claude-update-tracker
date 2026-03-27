@@ -1,6 +1,6 @@
 # Claude Update Tracker
 
-Track the latest Claude AI and Claude Code updates so you don't have to.
+Real-time tracking of the latest Claude AI and Claude Code updates so you don't have to.
 
 Built around the iconic "babe wake up, new update just dropped" meme cat.
 
